@@ -91,6 +91,7 @@ ALTER TABLE fees ENABLE ROW LEVEL SECURITY;
 -- Basic Policies (can be refined later)
 CREATE POLICY "Public profiles are viewable by everyone" ON profiles FOR SELECT USING (true);
 CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Users can insert own profile" ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
 
 -- For simplicity in demo, allowing full access to authenticated users
 -- In production, these should be restricted based on roles

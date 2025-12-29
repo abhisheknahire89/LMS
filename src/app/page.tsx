@@ -57,12 +57,34 @@ export default function BharatVidyaLMS() {
         .from('profiles')
         .select('*, students(*)')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
-      setProfile(data);
-      if (data.role === ROLES.PARENT && data.linked_student_id) {
-        setViewingChildData(data.students);
+
+      if (!data) {
+        // Fallback: Create profile if it doesn't exist
+        let autoRole = ROLES.PARENT;
+        const email = session?.user.email;
+        if (email === 'admin@school.com') autoRole = ROLES.ADMIN;
+        if (email === 'teacher@school.com') autoRole = ROLES.TEACHER;
+
+        const { data: newProfile, error: createError } = await supabase
+          .from('profiles')
+          .upsert({
+            id: userId,
+            email: email,
+            role: autoRole
+          })
+          .select()
+          .single();
+
+        if (createError) throw createError;
+        setProfile(newProfile as UserProfile);
+      } else {
+        setProfile(data as UserProfile);
+        if (data.role === ROLES.PARENT && data.linked_student_id) {
+          setViewingChildData(data.students);
+        }
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -123,20 +145,21 @@ function AuthView({ onLogin }: { onLogin: () => void }) {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       } else {
-        const { data: { user }, error: signUpError } = await supabase.auth.signUp({
+        const { data: { user, session }, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
           options: { data: { full_name: name } }
         });
         if (signUpError) throw signUpError;
 
-        if (user) {
-          // Profile is created by trigger in production usually, 
-          // but for demo we might need to upsert if trigger isn't set.
-          const { error: profileError } = await supabase
-            .from('profiles')
-            .upsert({ id: user.id, email, name, role: ROLES.PARENT });
-          if (profileError) console.error("Profile auto-creation error:", profileError);
+        if (user && !session) {
+          setError("Confirmation email sent! Please check your inbox.");
+          return;
+        }
+
+        if (user && session) {
+          // Profile creation - optional here as fetchProfile handles fallback
+          await supabase.from('profiles').upsert({ id: user.id, email, name, role: ROLES.PARENT });
         }
       }
     } catch (err: any) {
@@ -226,6 +249,15 @@ function Layout({ profile, onLogout, children, currentPage, setCurrentPage }: an
     { name: 'Fees', icon: DollarSign, page: 'fees', roles: [ROLES.ADMIN, ROLES.TEACHER, ROLES.PARENT] },
     { name: 'Admin Panel', icon: Send, page: 'admin', roles: [ROLES.ADMIN] },
   ];
+
+  if (!profile) return (
+    <div className="min-h-screen flex items-center justify-center bg-[#f8f9fa]">
+      <div className="text-center">
+        <p className="text-gray-600 mb-4">Initializing profile...</p>
+        <button onClick={onLogout} className="text-[#1a73e8] hover:underline">Return to Login</button>
+      </div>
+    </div>
+  );
 
   const filteredNav = navigation.filter(item => item.roles.includes(profile.role));
 
