@@ -243,11 +243,15 @@ function AuthView({ onLogin }: { onLogin: () => void }) {
         </p>
 
         <div className="mt-8 pt-6 border-t border-gray-100 text-center">
-          <p className="text-xs font-bold text-gray-700 mb-2">📌 Getting Started</p>
-          <div className="text-xs text-gray-500 space-y-1">
-            <p>• <span className="font-medium text-gray-700">New users:</span> Sign up to create a Parent account</p>
-            <p>• <span className="font-medium text-gray-700">Admins/Teachers:</span> Contact administrator for account setup</p>
+          <p className="text-xs font-bold text-gray-700 mb-3">🎯 Demo Credentials</p>
+          <div className="text-xs text-gray-600 space-y-1 mb-3">
+            <p><span className="font-semibold">Admin:</span> admin@school.com / admin123</p>
+            <p><span className="font-semibold">Teacher:</span> teacher@school.com / teacher123</p>
+            <p><span className="font-semibold">Parent:</span> parent@school.com / parent123</p>
           </div>
+          <p className="text-[10px] text-gray-500 italic">
+            ⚠️ Create these accounts in Supabase first (see DEMO_SETUP.md)
+          </p>
         </div>
       </div>
     </div>
