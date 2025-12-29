@@ -148,22 +148,36 @@ function AuthView({ onLogin }: { onLogin: () => void }) {
         const { data: { user, session }, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
-          options: { data: { full_name: name } }
+          options: {
+            data: { full_name: name },
+            emailRedirectTo: window.location.origin
+          }
         });
+
         if (signUpError) throw signUpError;
 
         if (user && !session) {
-          setError("Confirmation email sent! Please check your inbox.");
+          // Email confirmation required
+          alert('✅ Account created! Please check your email to confirm your account, then return here to log in.');
+          setIsLogin(true);
+          setEmail('');
+          setPassword('');
+          setName('');
           return;
         }
 
         if (user && session) {
-          // Profile creation - optional here as fetchProfile handles fallback
-          await supabase.from('profiles').upsert({ id: user.id, email, name, role: ROLES.PARENT });
+          // Auto-logged in (email confirmation disabled)
+          await supabase.from('profiles').upsert({
+            id: user.id,
+            email,
+            name,
+            role: ROLES.PARENT
+          });
         }
       }
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || 'Authentication failed. Please try again.');
     } finally {
       setLoading(false);
     }
